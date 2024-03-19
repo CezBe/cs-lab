@@ -6,6 +6,9 @@ namespace lab
     {
         private static void Main(string[] args)
         {
+            foreach (var p in Utils.GetListOfCreatedPlayers()) {
+                Console.WriteLine(p);
+            }
             const int min = 0;
             const int max = 100;
             var rnd = new Random();
@@ -25,13 +28,13 @@ namespace lab
             }
 
             while (true) {
-                Game.PrintMenu("Koniec", "Gramy dalej");
+                Game.PrintMenu("Koniec", "Gramy dalej", "Zresetuj statystki");
                
                 switch (Game.GetIntAnswerFromUser("Co robimy?: ")) {
-                    case 0:
+                    case 1:
                         game.EndGame();
                         break;
-                    case 1:
+                    case 2:
                         var drawn = game.DrawNumber();
                         Console.WriteLine($"Wylosowałem liczbę ({drawn}). Zacznijmy zgadywać!");
 
@@ -48,6 +51,15 @@ namespace lab
                                 game.IsGuessHighOrLow(userChoice);
                             }
                         } while (!game.IsPlayerGuessedNumber(userChoice));
+                        break;
+                    case 3:
+                        var players = Utils.GetListOfCreatedPlayers();
+                        Game.PrintMenu(players);
+                        var answer = Game.GetIntAnswerFromUser("Którego gracza statystki chcesz zresetować?: ");
+
+                        if (players[answer - 1] == game.player.name) game.player.ResetPlayerStats();
+                        else Utils.GetPlayer(players[answer - 1]).ResetPlayerStats();
+                        
                         break;
                 }
             }

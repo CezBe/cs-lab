@@ -31,7 +31,7 @@ namespace lab {
         public static int GetIntAnswerFromUser(string question) {
             Console.Write(question);
             try {
-                return int.Parse(Console.ReadLine()) - 1;
+                return int.Parse(Console.ReadLine());
             }
             catch {
                 Console.WriteLine("Odpowiedź jest niepoprawna");

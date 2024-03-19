@@ -27,8 +27,8 @@ namespace lab
 
         public void SetScoreFromFile() {
             try {
-                var score = File.ReadAllText($"./{name}.txt");
-                this.score = int.Parse(score);
+                var text = File.ReadAllText($"./{name}.txt");
+                this.score = int.Parse(text);
             }
             catch {
                 Console.WriteLine("Gracz nie ma zapisanego wyniku!");
@@ -37,6 +37,11 @@ namespace lab
 
         public void WriteScoreToFile() {
             File.WriteAllText($"./{name}.txt", score.ToString());
+        }
+
+        public void ResetPlayerStats() {
+            File.WriteAllText($"./{name}.txt", "0");
+            score = 0;
         }
     }
 }
