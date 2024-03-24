@@ -5,18 +5,17 @@ namespace lab
 {
     public class Player {
         public string name;
-        public int score;
+        public Stats stats;
 
-        public Player(string name, int score = 0)
+        public Player(string name)
         {
             this.name = name;
-            this.score = score;
+            stats = new Stats(this.name);
         }
 
         public bool Exists() {
-            try
-            {
-                var fs = new FileStream($"../../{name}.txt", FileMode.Open);
+            try {
+                var fs = new FileStream($"{Utils.baseDir}{name}.txt", FileMode.Open);
                 fs.Close();
             }
             catch {
@@ -25,18 +24,32 @@ namespace lab
             return true;
             }
 
-        public void SetScoreFromFile() {
+        public void ResetStats() {
+            File.WriteAllText($"{Utils.baseDir}{name}.txt", "0 0 0\n0 0 0\n0 0 0\n0 0 0");
+            stats.SetScoreFromFile();
+            Console.WriteLine($"Statystki gracza {name} zostały zresetowane");
+        }
+        
+        public virtual int GetIntAnswer(string question) {
+            Console.Write(question);
             try {
-                var score = File.ReadAllText($"./{name}.txt");
-                this.score = int.Parse(score);
+                return int.Parse(Console.ReadLine());
             }
             catch {
-                Console.WriteLine("Gracz nie ma zapisanego wyniku!");
+                Console.WriteLine("Odpowiedź jest niepoprawna");
+                return GetIntAnswer(question);
             }
         }
 
-        public void WriteScoreToFile() {
-            File.WriteAllText($"./{name}.txt", score.ToString());
+        public bool GetBoolAnswer(string question) {
+            string answer;
+            
+            do {
+                Console.Write($"{question}. Odpowiedz T/N: ");
+                answer = Console.ReadLine();
+            } while (answer.ToLower() != "t" && answer.ToLower() != "n");
+
+            return answer == "t";
         }
     }
 }

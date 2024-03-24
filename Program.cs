@@ -1,53 +1,38 @@
-﻿using System;
-
-namespace lab
+﻿namespace lab
 {
     internal class Program
     {
         private static void Main(string[] args)
         {
-            const int min = 0;
-            const int max = 100;
-            var rnd = new Random();
-            Console.Write("Podaj swoję imię: ");
+            var players = Utils.GetPlayers();
+            var game = new Game(players);
             
-            var player = new Player(Console.ReadLine());
-            var game = new Game(player);
-            
-            game.SetRange(min, max);
-            
-            if (game.player.Exists()) {
-                game.player.SetScoreFromFile();
-                Console.WriteLine($"Znów się widzimy, {player.name}! Twój aktualny wynik to {player.score}");
-            }
-            else {
-                game.PrintRules();
-            }
+            Utils.LoadPlayersScore(players);
 
+            game.SetRange(Utils.GetLevel());
             while (true) {
-                Game.PrintMenu("Koniec", "Gramy dalej");
+                Utils.PrintMenu("Koniec", "Gra: Zgaduje gracz/e", "Gra: Zgaduje komputer", "Ustawienia: Zresetuj statystki");
                
-                switch (Game.GetIntAnswerFromUser("Co robimy?: ")) {
-                    case 0:
+                switch (game.player.GetIntAnswer("Co robimy?: ")) {
+                    case 1:
                         game.EndGame();
                         break;
-                    case 1:
-                        var drawn = game.DrawNumber();
-                        Console.WriteLine($"Wylosowałem liczbę ({drawn}). Zacznijmy zgadywać!");
-
-                        int userChoice;
-                        do
-                        {
-                            userChoice = Game.GetIntAnswerFromUser("O jakiej liczbie myślisz?: ");
-
-                            if (game.IsPlayerGuessedNumber(userChoice)) {
-                                Console.WriteLine($"Odgadłeś liczbę {drawn}. Gratulacje!");
-                                game.AddPointToPlayer();
-                            }
-                            else {
-                                game.IsGuessHighOrLow(userChoice);
-                            }
-                        } while (!game.IsPlayerGuessedNumber(userChoice));
+                    case 2:
+                        var switching = game.player.GetBoolAnswer("Czy chcesz zagrać w trybie multiplayer?");
+                        var addBot = switching && game.player.GetBoolAnswer("Czy chcesz zdodać Bota do gry?");
+                        
+                        if (game.players.Count > 1 && !switching) {
+                            var chosenPlayer = Utils.ChosePlayerMenu(players);
+                            game.FindPlayer(chosenPlayer);
+                        }
+                        
+                        game.PlayPlayersGuesses(addBot, switching);
+                        break;
+                    case 3:
+                        game.PlayBotGuesses();
+                        break;
+                    case 4:
+                        Utils.PlayerResetStatsMenu(game);
                         break;
                 }
             }
