@@ -1,53 +1,61 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace lab
 {
     internal class Program
     {
-        private static void Main(string[] args)
-        {
-            const int min = 0;
-            const int max = 100;
-            var rnd = new Random();
-            Console.Write("Podaj swoję imię: ");
-            
-            var player = new Player(Console.ReadLine());
-            var game = new Game(player);
-            
-            game.SetRange(min, max);
-            
-            if (game.player.Exists()) {
-                game.player.SetScoreFromFile();
-                Console.WriteLine($"Znów się widzimy, {player.name}! Twój aktualny wynik to {player.score}");
-            }
-            else {
-                game.PrintRules();
+        private static void Main(string[] args) {
+            var players = Utils.GetPlayers();
+            if (!Utils.SetupResultsDir()) {
+                Console.WriteLine($"{players[0]} zostaje tymczasowym mistrzem");
+                players[0].stats.SwitchChampion();
             }
 
+            var game = new Game(players);
+            var menuOptions = new[] {"Koniec", "Gra: Zgaduje gracz/e", "Gra: Zgaduje komputer", "Gra: Turniej", "Ustawienia: Zresetuj statystki", "Informacje"};
+            
+            Utils.LoadPlayersScore(players);
+            game.player.stats.IsChampion();
+            
+            game.SetRange(Utils.GetLevel());
             while (true) {
-                Game.PrintMenu("Koniec", "Gramy dalej");
+                Utils.PrintMenu(menuOptions);
                
-                switch (Game.GetIntAnswerFromUser("Co robimy?: ")) {
-                    case 0:
+                switch (game.player.GetIntAnswer("Co robimy?: ", 1, menuOptions.Length)) {
+                    case 1:
                         game.EndGame();
                         break;
-                    case 1:
-                        var drawn = game.DrawNumber();
-                        Console.WriteLine($"Wylosowałem liczbę ({drawn}). Zacznijmy zgadywać!");
-
-                        int userChoice;
-                        do
-                        {
-                            userChoice = Game.GetIntAnswerFromUser("O jakiej liczbie myślisz?: ");
-
-                            if (game.IsPlayerGuessedNumber(userChoice)) {
-                                Console.WriteLine($"Odgadłeś liczbę {drawn}. Gratulacje!");
-                                game.AddPointToPlayer();
-                            }
-                            else {
-                                game.IsGuessHighOrLow(userChoice);
-                            }
-                        } while (!game.IsPlayerGuessedNumber(userChoice));
+                    case 2:
+                        var multiplayer = game.player.GetBoolAnswer("Czy chcesz zagrać w trybie multiplayer?");
+                        var addBot = multiplayer && game.player.GetBoolAnswer("Czy chcesz dodać Bota do gry?");
+                        
+                        if (game.players.Count > 1 && !multiplayer) {
+                            var chosenPlayer = Utils.ChosePlayerMenu(players);
+                            game.FindPlayer(chosenPlayer);
+                        }
+                        
+                        game.PlayPlayersGuesses(addBot, multiplayer);
+                        if (!(game.player is Bot)) {
+                            Console.WriteLine($"{game.player.name}, wybierz poziom trudności");
+                            game.SetRange(Utils.GetLevel(true));
+                        }
+                        break;
+                    case 3:
+                        game.PlayBotGuesses();
+                        break;
+                    case 4:
+                        Console.WriteLine("Wybierz format turnieju");
+                        var bestOf = Utils.GetBestOf();
+                        var tournament = new Tournament(bestOf, game.players);
+                        tournament.Start();
+                        break;
+                    case 5:
+                        Utils.PlayerResetStatsMenu(game);
+                        break;
+                    case 6:
+                        game.PrintRules();
                         break;
                 }
             }
