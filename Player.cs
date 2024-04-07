@@ -13,9 +13,17 @@ namespace lab
             stats = new Stats(this.name);
         }
 
+        public override string ToString() {
+            return name;
+        }
+        
+        ~Player() {
+            stats.WriteScoreToFile();
+        }
+
         public bool Exists() {
             try {
-                var fs = new FileStream($"{Utils.baseDir}{name}.txt", FileMode.Open);
+                var fs = new FileStream($"{Utils.BaseResultsPath}{name}.txt", FileMode.Open);
                 fs.Close();
             }
             catch {
@@ -25,19 +33,24 @@ namespace lab
             }
 
         public void ResetStats() {
-            File.WriteAllText($"{Utils.baseDir}{name}.txt", "0 0 0\n0 0 0\n0 0 0\n0 0 0");
+            File.WriteAllText($"{Utils.BaseResultsPath}{name}.txt", "0 0 0\n0 0 0\n0 0 0\n0 0 0");
             stats.SetScoreFromFile();
             Console.WriteLine($"Statystki gracza {name} zostały zresetowane");
         }
         
-        public virtual int GetIntAnswer(string question) {
+        public virtual int GetIntAnswer(string question, int minChoice, int maxChoice) {
             Console.Write(question);
+            var choice = Console.ReadLine();
             try {
-                return int.Parse(Console.ReadLine());
+                var choiceInt = int.Parse(choice);
+                if (choiceInt < minChoice || choiceInt > maxChoice) {
+                    throw new Exception("Liczba wychodzi poza zakres");
+                }
+                return int.Parse(choice);
             }
             catch {
                 Console.WriteLine("Odpowiedź jest niepoprawna");
-                return GetIntAnswer(question);
+                return GetIntAnswer(question, minChoice, maxChoice);
             }
         }
 
@@ -45,11 +58,11 @@ namespace lab
             string answer;
             
             do {
-                Console.Write($"{question}. Odpowiedz T/N: ");
+                Console.Write($"{question} Odpowiedz T/N: ");
                 answer = Console.ReadLine();
             } while (answer.ToLower() != "t" && answer.ToLower() != "n");
 
-            return answer == "t";
+            return answer.ToLower() == "t";
         }
     }
 }

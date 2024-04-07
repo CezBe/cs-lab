@@ -5,14 +5,14 @@ namespace lab {
     public class Game {
         public Player player;
         public List<Player> players;
-        
+
         private int playerPointer;
         private int minRange;
         private int maxRange;
         private int drawnNumber;
         private Random random;
         private Level level;
-        
+
         public Game(List<Player> players) {
             this.players = players;
             random = new Random();
@@ -27,7 +27,12 @@ namespace lab {
             else {
                 playerPointer = 0;
             }
+
             player = players[playerPointer];
+        }
+
+        private Player DrawPlayer() {
+            return players[random.Next(0, players.Count)];
         }
 
         public void FindPlayer(Player player) {
@@ -35,7 +40,10 @@ namespace lab {
         }
 
         public void PrintRules() {
-            Console.WriteLine($"Cześć, {player.name}! To jest gra w której będziesz próbował zgadnać wylosowana przeze mnie liczbę z zakresu ({minRange};{maxRange})\\nGotów? (kliknij dowolny przycisk)");
+            Console.WriteLine(
+                $"Cześć, to jest gra w której będziesz próbował zgadnać wylosowana przeze mnie liczbę z zakresu ({minRange};{maxRange})\n" +
+                $"Przywileje lidera: Zawsze zaczyna grę jako pierwszy\nPrzywileje mistrza: można ominąć kolejkę podczas gry multiplayer");
+            Console.WriteLine("Gotów? (kliknij dowolny przycisk)");
             Console.ReadKey();
         }
 
@@ -43,13 +51,13 @@ namespace lab {
             Console.WriteLine($"Świetna gra {player.name}! Aktualne wyniki graczy:");
             Utils.PrintStatsLeaderboard(players);
         }
-        
+
         public void SetRange(Level level) {
             this.level = level;
 
             if (level == Level.Custom) {
-                minRange = player.GetIntAnswer("Podaj dolny zakres: ");
-                maxRange = player.GetIntAnswer("Podaj górny zakres: ");
+                minRange = player.GetIntAnswer("Podaj dolny zakres: ", 0, 2147483646);
+                maxRange = player.GetIntAnswer("Podaj górny zakres: ", minRange, 2147483647);
             }
             else {
                 minRange = 0;
@@ -75,18 +83,31 @@ namespace lab {
 
         private bool IsGuessHighOrLow(int userGuess, int chosenInt) {
             if (userGuess == chosenInt) ;
-            
+
             Console.WriteLine(userGuess > chosenInt
                 ? "Podana przez ciebie liczba jest za duża."
                 : "Podana przez ciebie liczba jest za mała.");
 
             return userGuess > chosenInt;
         }
-        
+
         private void AddPointToPlayer() {
             player.stats.SetScore(level, 1);
         }
-        
+
+        private Player GetLeader() {
+            var sortedPlayers = new List<Player>(players);
+            sortedPlayers.Sort((x, y) => x.stats.GetRecord(level)[0].CompareTo(y.stats.GetRecord(level)[0]));
+            sortedPlayers.Reverse();
+            
+            if (players.Count > 1 && sortedPlayers[0].stats.GetRecord(level)[0] > sortedPlayers[1].stats.GetRecord(level)[0]) {
+                var selectedPlayer = sortedPlayers[0];
+                Console.WriteLine($"{selectedPlayer.name} ({selectedPlayer.stats.GetRecord(level)[0]}) jest liderem");
+                return sortedPlayers[0];
+            }
+            return null;
+        }
+
         public void PlayPlayersGuesses(bool addBot = false, bool multiplayer = true) {
             Bot bot = null;
             if (addBot) {
@@ -98,15 +119,23 @@ namespace lab {
             Console.WriteLine($"Wylosowałem liczbę ({drawn}). Zacznijmy zgadywać!");
             
             if (players.Count > 1 && multiplayer) {
-                FindPlayer(Utils.DrawPlayer(players, random));
+                var leader = GetLeader();
+                FindPlayer(leader ?? DrawPlayer());
                 Console.WriteLine($"Zaczyna {player.name}");
             }
             
-            
             int userChoice;
             do {
-                userChoice = player.GetIntAnswer($"{player.name}, o jakiej liczbie myślisz?: ");
-
+                if (multiplayer && player.stats.IsChampion()) {
+                    if (player.GetBoolAnswer($"{player}, czy chcesz ominąć kolejkę?")) {
+                        Console.WriteLine($"{player} omija kolejkę");
+                        NextPlayer();
+                        userChoice = minRange - 1;
+                        continue;
+                    }
+                }
+                userChoice = player.GetIntAnswer($"{player.name}, o jakiej liczbie myślisz?: ", minRange, maxRange);
+                
                 if (IsPlayerGuessedNumber(userChoice, drawn)) {
                     Console.WriteLine($"{player.name}, odgadłeś liczbę {drawn}. Gratulacje!");
                     AddPointToPlayer();
@@ -120,7 +149,7 @@ namespace lab {
            
             Console.WriteLine($"{player.name} wygrywasz!");
 
-            if (multiplayer) {
+            if (players.Count > 1) {
                 foreach (var i in players) {
                     i.stats.UpdateRecord(level, i == player);
                 }
@@ -131,21 +160,16 @@ namespace lab {
             }
 
             if (addBot) players.Remove(bot);
-
-            if (player != bot) {
-                Console.WriteLine($"{player.name}, wybierz poziom trudności");
-                SetRange(Utils.GetLevel(true));
-            }
         }
 
         public void PlayBotGuesses() {
-            var userChoice = player.GetIntAnswer("O jakiej liczbie myślisz?: ");
+            var userChoice = player.GetIntAnswer("O jakiej liczbie myślisz?: ", minRange, maxRange);
             var bot = new Bot(maxRange, random);
             player = bot;
             
             int botGuess;
             do {
-                botGuess = bot.GetIntAnswer("");
+                botGuess = bot.GetIntAnswer("", 0, 0);
                 if (IsPlayerGuessedNumber(botGuess, userChoice)) continue;
                 bot.SetRange(botGuess, IsGuessHighOrLow(botGuess, userChoice));
             } while (!IsPlayerGuessedNumber(botGuess, userChoice));

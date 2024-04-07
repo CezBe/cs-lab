@@ -13,16 +13,12 @@ namespace lab {
             this.maxRange = maxRange;
             this.rnd = rnd;
         }
-
-        ~Bot() {
-            stats.WriteScoreToFile();
-        }
-
+        
         public string Say(string message) {
             return $"CPU: {message}";
         }
 
-        public override int GetIntAnswer(string question) {
+        public override int GetIntAnswer(string question, int minChoice, int maxChoice) {
             var guess = rnd.Next(minRange, maxRange + 1);
             Console.WriteLine(Say($"Zgaduje liczbę: {guess}"));
             
